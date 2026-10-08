@@ -1,0 +1,71 @@
+# CIV Controlled Pilot - TLS Reverse Proxy Configuration
+# Caddyfile provides automated TLS termination, HSTS, secure headers,
+# and routing to FastAPI backend and frontend.
+{
+	admin off
+	skip_install_trust
+	auto_https disable_redirects
+	default_bind 127.0.0.1
+}
+
+# Controlled Internal Pilot HTTPS Endpoint
+https://localhost:8443 {
+	bind 127.0.0.1
+	# Internal self-signed TLS for local/internal pilot testing.
+	# In corporate/production pilot, replace with:
+	# tls /etc/ssl/certs/pilot_cert.pem /etc/ssl/certs/pilot_key.pem
+	# or fully-qualified domain name with automated ACME certificate:
+	# pilot.civ.internal { ... }
+	tls internal
+
+	# Defensive Security Headers
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;"
+		X-XSS-Protection "1; mode=block"
+	}
+
+	# API endpoints routed to FastAPI backend
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto https
+		}
+	}
+
+	# API documentation routed to FastAPI backend
+	handle /docs* {
+		reverse_proxy 127.0.0.1:8000 {
+			header_up Host {host}
+			header_up X-Forwarded-Proto https
+		}
+	}
+
+	handle /openapi.json {
+		reverse_proxy 127.0.0.1:8000 {
+			header_up Host {host}
+			header_up X-Forwarded-Proto https
+		}
+	}
+
+	# Health check routed to FastAPI backend
+	handle /healthz {
+		reverse_proxy 127.0.0.1:8000 {
+			header_up Host {host}
+			header_up X-Forwarded-Proto https
+		}
+	}
+
+	# Frontend UI fallback
+	handle {
+		reverse_proxy 127.0.0.1:5173 {
+			header_up Host {host}
+			header_up X-Forwarded-Proto https
+		}
+	}
+}

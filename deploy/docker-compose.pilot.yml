@@ -1,0 +1,56 @@
+# ==============================================================================
+# Construction Invoice Verification (CIV) - Controlled Internal Pilot
+# Infrastructure Compose Definition
+# ==============================================================================
+# Services:
+#   1. postgres: PostgreSQL 16 database for ACID verification, users, and audit
+#   2. clamav:   ClamAV daemon (clamd) for fail-closed anti-malware inspection
+#
+# SECURITY MANDATE:
+#   - All ports are bound strictly to loopback (127.0.0.1).
+#   - No public network exposure (0.0.0.0 is prohibited).
+#   - Passwords and secrets are injected via environment variables (.env.pilot).
+# ==============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: civ-pilot-postgres
+    restart: unless-stopped
+    ports:
+      # Bound strictly to loopback address (127.0.0.1)
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-civ_pilot}
+      POSTGRES_USER: ${POSTGRES_USER:-civ_user}
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - civ_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_USER:-civ_user} -d ${POSTGRES_DB:-civ_pilot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  clamav:
+    image: clamav/clamav:latest
+    container_name: civ-pilot-clamav
+    restart: unless-stopped
+    ports:
+      # Bound strictly to loopback address (127.0.0.1)
+      - "127.0.0.1:3310:3310"
+    volumes:
+      - civ_clamav_data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan /bin/sh || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  civ_postgres_data:
+    name: civ_pilot_postgres_data
+  civ_clamav_data:
+    name: civ_pilot_clamav_data
