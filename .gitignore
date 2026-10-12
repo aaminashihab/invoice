@@ -130,3 +130,23 @@ desktop.ini
 logs/
 temp/
 tmp/
+
+# Internal Documentation, Working Reports & Generators
+reports/CIV_Full_Project_Report.md
+reports/CIV_Test_and_Verification_Report.md
+reports/generator/
+backend/scripts/record_portfolio_demo.mjs
+
+# Video Recordings & Binary Media (Prevent Git Repo Bloat)
+artifacts/*.mp4
+*.mp4
+
+# Dedicated Private Working Directory (Prompts, Internal Reports, Video Tools, Notes)
+/private_work/
+private_work/
+
+# Local Utilities & Developer Password Tools
+backend/scripts/reset_pilot_passwords.py
+
+
+

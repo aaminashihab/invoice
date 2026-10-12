@@ -376,3 +376,215 @@ async def replace_document(
         },
         "reuse_warning": result.reuse_warning,
     }
+
+
+# =============================================================================
+# OCR & Gemini AI Extraction Endpoints
+# =============================================================================
+
+from pydantic import BaseModel, Field
+
+
+class UpdateFieldRequest(BaseModel):
+    new_value: str = Field(..., description="Corrected field value entered by human reviewer.")
+    reason: str | None = Field(default=None, description="Optional explanation for the manual correction.")
+
+
+@router.post("/documents/{document_id}/extract")
+async def trigger_document_extraction(
+    document_id: str,
+    current_user: Annotated[UserOrm, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    storage: DocumentStorage = Depends(get_document_storage),
+):
+    """Trigger AI extraction using pypdf text inspection and Google GenAI multimodal parsing.
+
+    * Untrusted data handling: extracted values are marked EXTRACTED.
+    * Never overwrites CONFIRMED or CORRECTED human values.
+    * Requires valid project access and authorized role (QS, ENGINEER, ADMIN).
+    """
+    from app.services.extraction_service import (
+        ExtractionError,
+        ExtractionParseError,
+        ExtractionService,
+        MissingApiKeyError,
+    )
+
+    doc_service = DocumentService(db, storage=storage)
+    try:
+        doc = doc_service.get_document(document_id)
+    except DocumentNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "DOCUMENT_NOT_FOUND", "message": str(exc)},
+        ) from exc
+
+    if doc.case_id:
+        require_project_access_for_case(doc.case_id, current_user, db)
+
+    ext_service = ExtractionService(db, storage=storage)
+    try:
+        result = ext_service.extract_document(
+            document_id=document_id,
+            actor_id=current_user.id,
+        )
+    except MissingApiKeyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "GEMINI_API_KEY_MISSING",
+                "message": str(exc),
+            },
+        ) from exc
+    except ExtractionParseError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "EXTRACTION_PARSE_FAILED",
+                "message": str(exc),
+            },
+        ) from exc
+    except ExtractionError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "EXTRACTION_ERROR",
+                "message": str(exc),
+            },
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "EXTRACTION_UNEXPECTED_ERROR",
+                "message": f"Unexpected extraction error: {exc}",
+            },
+        ) from exc
+
+    return {
+        "banner": BANNER_TEXT,
+        "synthetic_data_only": True,
+        **result,
+    }
+
+
+@router.get("/documents/{document_id}/extracted-fields")
+async def get_document_extracted_fields(
+    document_id: str,
+    current_user: Annotated[UserOrm, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    storage: DocumentStorage = Depends(get_document_storage),
+):
+    """Retrieve structured fields, confidence scores, review statuses, and revisions for a document."""
+    from app.services.extraction_service import ExtractionService
+
+    doc_service = DocumentService(db, storage=storage)
+    try:
+        doc = doc_service.get_document(document_id)
+    except DocumentNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "DOCUMENT_NOT_FOUND", "message": str(exc)},
+        ) from exc
+
+    if doc.case_id:
+        require_project_access_for_case(doc.case_id, current_user, db)
+
+    ext_service = ExtractionService(db)
+    result = ext_service.get_document_fields(document_id)
+
+    return {
+        "banner": BANNER_TEXT,
+        "synthetic_data_only": True,
+        **result,
+    }
+
+
+@router.patch("/documents/{document_id}/fields/{field_id}")
+async def update_extracted_field(
+    document_id: str,
+    field_id: str,
+    req: UpdateFieldRequest,
+    current_user: Annotated[UserOrm, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    storage: DocumentStorage = Depends(get_document_storage),
+):
+    """Allow human reviewer (QS / Engineer / Admin) to correct an extracted field.
+
+    Creates an immutable audit record in FieldRevisionOrm and sets status to CORRECTED.
+    """
+    from app.services.extraction_service import ExtractionError, ExtractionService
+
+    doc_service = DocumentService(db, storage=storage)
+    try:
+        doc = doc_service.get_document(document_id)
+    except DocumentNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "DOCUMENT_NOT_FOUND", "message": str(exc)},
+        ) from exc
+
+    if doc.case_id:
+        require_project_access_for_case(doc.case_id, current_user, db)
+
+    ext_service = ExtractionService(db)
+    try:
+        field = ext_service.update_field(
+            document_id=document_id,
+            field_id=field_id,
+            new_value=req.new_value,
+            reason=req.reason,
+            actor_id=current_user.id,
+        )
+    except ExtractionError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "FIELD_UPDATE_ERROR", "message": str(exc)},
+        ) from exc
+
+    return {
+        "banner": BANNER_TEXT,
+        "synthetic_data_only": True,
+        "field_id": field.id,
+        "field_key": field.field_key,
+        "normalized_value": field.normalized_value,
+        "status": field.status,
+        "updated_by": field.updated_by,
+        "updated_at": field.updated_at.isoformat() if field.updated_at else None,
+    }
+
+
+@router.post("/documents/{document_id}/confirm")
+async def confirm_document_fields(
+    document_id: str,
+    current_user: Annotated[UserOrm, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+    storage: DocumentStorage = Depends(get_document_storage),
+):
+    """Confirm all unconfirmed fields on a document, establishing trust for automated verification."""
+    from app.services.extraction_service import ExtractionError, ExtractionService
+
+    doc_service = DocumentService(db, storage=storage)
+    try:
+        doc = doc_service.get_document(document_id)
+    except DocumentNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "DOCUMENT_NOT_FOUND", "message": str(exc)},
+        ) from exc
+
+    if doc.case_id:
+        require_project_access_for_case(doc.case_id, current_user, db)
+
+    ext_service = ExtractionService(db)
+    result = ext_service.confirm_all_document_fields(
+        document_id=document_id,
+        actor_id=current_user.id,
+    )
+
+    return {
+        "banner": BANNER_TEXT,
+        "synthetic_data_only": True,
+        **result,
+    }
+

@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.auth import router as auth_router
+from app.api.cases import router as cases_router
 from app.api.documents import router as documents_router
 from app.api.lpos import router as lpos_router
 from app.api.reviews import router as reviews_router
@@ -81,8 +82,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Attach auth, document, lpo, and review endpoints
+    # Attach auth, cases, document, lpo, and review endpoints
     app.include_router(auth_router)
+    app.include_router(cases_router)
     app.include_router(documents_router)
     app.include_router(lpos_router)
     app.include_router(reviews_router)
@@ -199,6 +201,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "lpo_reason_code": c.lpo_reason_code,
                     "lpo_reason_text": c.lpo_reason_text,
                     "status": c.status,
+                    "created_by": c.created_by,
                     "created_at": c.created_at.isoformat(),
                 }
                 for c in cases
@@ -261,6 +264,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "lpo_reason_code": c.lpo_reason_code,
                     "lpo_reason_text": c.lpo_reason_text,
                     "status": c.status,
+                    "created_by": c.created_by,
                     "documents": [
                         {
                             "id": d.id,
@@ -299,7 +303,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                 for f in r.findings
                             ],
                         }
-                        for r in c.runs
+                        for r in sorted(c.runs, key=lambda r: r.run_no, reverse=True)
                     ],
                     "audit_events": [
                         {
@@ -334,6 +338,44 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                             ],
                         }
                         for rev in c.reviews
+                    ],
+                    "line_items": [
+                        {
+                            "id": li.id,
+                            "document_id": li.document_id,
+                            "doc_type": d.doc_type,
+                            "dn_number": (
+                                d.reference_no_normalized or d.original_filename
+                                if d.doc_type == "DELIVERY_NOTE"
+                                else None
+                            ),
+                            "line_no": li.line_no,
+                            "kind": li.kind,
+                            "fields": {
+                                f.field_key: f.normalized_value or f.raw_value
+                                for f in li.fields
+                            },
+                            "storekeeper_ticket_no": li.storekeeper_ticket_no,
+                            "storekeeper_confirmed": li.storekeeper_confirmed,
+                            "engineer_verified": li.engineer_verified,
+                            "rejected_qty": li.rejected_qty,
+                            "rejection_reason_code": li.rejection_reason_code,
+                            "has_rejection_evidence": li.has_rejection_evidence,
+                        }
+                        for d in c.documents
+                        for li in d.line_items
+                        if not li.deleted_reason and not d.is_deleted
+                    ],
+                    "line_links": [
+                        {
+                            "id": link.id,
+                            "invoice_line_id": link.invoice_line_id,
+                            "dn_line_id": link.dn_line_id,
+                            "lpo_line_id": link.lpo_line_id,
+                            "link_method": link.link_method,
+                            "status": link.status,
+                        }
+                        for link in c.line_links
                     ],
                 },
             }

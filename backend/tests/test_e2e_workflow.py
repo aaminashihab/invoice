@@ -90,7 +90,7 @@ def test_e2e_clean_workflow_listing_upload_and_review(e2e_test_env):
     assert detail_resp.status_code == 200
     detail = detail_resp.json()["case"]
     assert detail["case_ref"] == "VC-2026-00001"
-    assert detail["supplier"]["name"] == "Emirates Cement Factory LLC (Synthetic)"
+    assert detail["supplier"]["name"] == "Caelum Bulk Cement Factory LLC (Fictional Demo)"
     assert len(detail["documents"]) >= 3
     assert len(detail["runs"]) >= 1
 

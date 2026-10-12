@@ -76,7 +76,7 @@ PILOT_USERS = [
     },
     {
         "id": "usr-pilot-project-qs",
-        "name": "Ramesh Nair (Project QS)",
+        "name": "Ramesh (Project QS)",
         "email": "ramesh.qs@pilot.civ.local",
         "env_var": "PILOT_PROJECT_QS_PASSWORD",
         "role": "QS",

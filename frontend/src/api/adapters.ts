@@ -1,8 +1,12 @@
-import type { ApiCaseDetail, ApiFinding, ApiDocument } from './client'
+import type { ApiCaseDetail, ApiFinding, ApiDocument, ApiCaseLineItem, ApiCaseLineLink } from './client'
 import type { ComparisonLine, AuditEvent, InvoiceRecord } from '../data/demoData'
 
 export interface ExtendedInvoiceRecord extends InvoiceRecord {
+  case_ref?: string
   documents?: ApiDocument[]
+  lineItems?: ApiCaseLineItem[]
+  lineLinks?: ApiCaseLineLink[]
+  createdBy?: string | null
 }
 
 export const ACTOR_DISPLAY_NAMES: Record<string, string> = {
@@ -10,6 +14,11 @@ export const ACTOR_DISPLAY_NAMES: Record<string, string> = {
   'usr-sim-rev': 'sim-reviewer',
   'usr-sim-qs': 'sim-qs',
   'usr-sim-acc': 'sim-accounts',
+  'usr-pilot-project-qs': 'Ramesh QS (Project QS)',
+  'usr-pilot-pm-reviewer': 'David PM (Commercial PM)',
+  'usr-pilot-site-eng': 'Ahmed Eng (Site Engineer)',
+  'usr-pilot-storekeeper': 'Tariq Store (Storekeeper)',
+  'usr-pilot-director-khalfan': 'Khalfan Director (Commercial Director)',
 }
 
 const USER_AUDIT_ACTIONS = new Set([
@@ -33,7 +42,10 @@ export function mapCaseToInvoiceRecord(
   c: ApiCaseDetail,
   fallbackAmount = '45,200.00'
 ): ExtendedInvoiceRecord {
-  const latestRun = c.runs && c.runs.length > 0 ? c.runs[0] : undefined
+  const latestRun =
+    c.runs && c.runs.length > 0
+      ? [...c.runs].sort((a, b) => (b.run_no ?? 0) - (a.run_no ?? 0))[0]
+      : undefined
   const findings: ApiFinding[] = latestRun?.findings || []
 
   const hasQuantityMismatch = findings.some(
@@ -61,9 +73,28 @@ export function mapCaseToInvoiceRecord(
     }
   }
 
-  // Note: These amounts are temporary synthetic display values because invoice totals
-  // are not currently persisted in the backend verification_case schema. They are used
-  // solely for prototype UI presentation and are not authoritative extracted or verified totals.
+  // Dynamic calculation from recorded invoice lines when available
+  let calculatedAmount: string | null = null
+  const invoiceLines = (c.line_items || []).filter((l) => l.doc_type === 'INVOICE')
+  if (invoiceLines.length > 0) {
+    const total = invoiceLines.reduce((sum, li) => {
+      const lineAmt = parseFloat(li.fields?.line_amount || '0')
+      if (!isNaN(lineAmt) && lineAmt > 0) {
+        return sum + lineAmt
+      }
+      const qty = parseFloat(li.fields?.invoiced_qty || '0')
+      const price = parseFloat(li.fields?.unit_price || '0')
+      if (!isNaN(qty) && !isNaN(price) && qty > 0 && price > 0) {
+        return sum + (qty * price)
+      }
+      return sum
+    }, 0)
+    if (total > 0) {
+      calculatedAmount = total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    }
+  }
+
+  // Baseline synthetic display values used as fallback when line items are not yet populated
   const CASE_AMOUNTS: Record<string, string> = {
     'INV-8821': '45,200.00',
     'INV-9042': '18,750.00',
@@ -79,6 +110,7 @@ export function mapCaseToInvoiceRecord(
     'VC-2026-00012': '14,200.00',
   }
   const resolvedAmount =
+    calculatedAmount ||
     (c.invoice_number_hint && CASE_AMOUNTS[c.invoice_number_hint]) ||
     (c.case_ref && CASE_AMOUNTS[c.case_ref]) ||
     fallbackAmount
@@ -157,11 +189,27 @@ export function mapCaseToInvoiceRecord(
     else if (f.outcome === 'MISSING_EVIDENCE') lineStatus = 'Missing'
     else if (f.outcome === 'UNCERTAIN') lineStatus = 'Uncertain'
 
+    let invQty = f.actual || '—'
+    let dnQty = f.expected || '—'
+
+    // Determine correct quantity direction:
+    // In backend verification engine:
+    // - For QTY_001 (missing evidence) and COMP_002: expected_value is invoiced qty, actual_value is delivered qty ("0" or null).
+    // - For QTY_004 (overbilling / mismatch) & seed QTY_002: actual_value is invoiced qty, expected_value is accepted delivered qty.
+    // - For QTY_003 / clean match: actual_value and expected_value are identical.
+    if (f.outcome === 'MISSING_EVIDENCE' || (f.rule_code === 'QTY_001' && f.outcome !== 'MATCH')) {
+      invQty = f.expected || '—'
+      dnQty = f.actual && f.actual !== '0' ? f.actual : '0.000'
+    } else if (f.rule_code === 'QTY_004' || f.rule_code === 'QTY_002') {
+      invQty = f.actual || '—'
+      dnQty = f.expected || '—'
+    }
+
     lines.push({
-      item: f.message.split(':')[0] || f.subject_type || 'Material',
-      invQty: f.actual || '—',
+      item: f.message || f.subject_type || 'Material',
+      invQty,
       unit: f.unit || '',
-      dnQty: f.expected || '—',
+      dnQty,
       diff: f.difference || (lineStatus === 'Matched' ? '0.000' : '—'),
       status: lineStatus,
       dnRef: dns.length > 0 ? dns.join(', ') : '—',
@@ -171,16 +219,45 @@ export function mapCaseToInvoiceRecord(
   }
 
   if (lines.length === 0) {
-    lines.push({
-      item: 'Material Item Verification',
-      invQty: '—',
-      unit: '',
-      dnQty: '—',
-      diff: '—',
-      status: status === 'Mismatch' ? 'Mismatch' : status === 'Missing' ? 'Missing' : 'Matched',
-      dnRef: dns.length > 0 ? dns.join(', ') : 'None',
-      ruleStatus: 'CONFIRMED',
-    })
+    const invLines = (c.line_items || []).filter((l) => l.doc_type === 'INVOICE')
+    const fallbackLineStatus =
+      status === 'Mismatch' ? 'Mismatch' : status === 'Missing' ? 'Missing' : 'Pending'
+
+    if (invLines.length > 0) {
+      for (const li of invLines) {
+        const links = (c.line_links || []).filter((link) => link.invoice_line_id === li.id)
+        let deliveredSum = 0
+        let hasLinked = false
+        for (const link of links) {
+          const dnLine = (c.line_items || []).find((l) => l.id === link.dn_line_id)
+          if (dnLine && dnLine.fields?.delivered_qty) {
+            hasLinked = true
+            deliveredSum += parseFloat(dnLine.fields.delivered_qty) || 0
+          }
+        }
+        lines.push({
+          item: li.fields?.description || `Invoice Line ${li.line_no}`,
+          invQty: li.fields?.invoiced_qty || '—',
+          unit: li.fields?.unit || '',
+          dnQty: hasLinked ? deliveredSum.toFixed(3) : '—',
+          diff: '—',
+          status: fallbackLineStatus,
+          dnRef: dns.length > 0 ? dns.join(', ') : 'None',
+          ruleStatus: 'CONFIRMED',
+        })
+      }
+    } else {
+      lines.push({
+        item: 'Material Item Verification',
+        invQty: '—',
+        unit: '',
+        dnQty: '—',
+        diff: '—',
+        status: fallbackLineStatus,
+        dnRef: dns.length > 0 ? dns.join(', ') : 'None',
+        ruleStatus: 'CONFIRMED',
+      })
+    }
   }
 
   // Audit history
@@ -248,6 +325,7 @@ export function mapCaseToInvoiceRecord(
 
   return {
     id: c.id,
+    case_ref: c.case_ref,
     supplier: c.supplier.name,
     supplierTrn: c.supplier.trn,
     invoiceNo: c.invoice_number_hint || c.case_ref,
@@ -270,5 +348,8 @@ export function mapCaseToInvoiceRecord(
     lines,
     auditHistory,
     documents: c.documents || [],
+    lineItems: c.line_items || [],
+    lineLinks: c.line_links || [],
+    createdBy: c.created_by,
   }
 }

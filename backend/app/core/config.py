@@ -79,6 +79,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_hours: int = 8
+    #: Gemini API configuration for AI document extraction
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-3.8-flash"
 
     def model_post_init(self, __context: Any) -> None:
         super().model_post_init(__context)

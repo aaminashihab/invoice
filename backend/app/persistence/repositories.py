@@ -38,6 +38,7 @@ class CaseRepository:
                 joinedload(VerificationCaseOrm.documents),
                 joinedload(VerificationCaseOrm.runs),
                 joinedload(VerificationCaseOrm.reviews),
+                joinedload(VerificationCaseOrm.line_links),
             )
         )
         return self.session.scalars(stmt).unique().first()

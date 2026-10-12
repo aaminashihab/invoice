@@ -90,10 +90,10 @@ def seed_database(session: Session) -> dict[str, int]:
 
     # 4. Synthetic Projects
     projects_data = [
-        {"id": "prj-01", "code": "PRJ-CT4", "name": "Alpha Horizon Tower Phase 1", "client": "Horizon Development PJSC (Synthetic)", "site_location": "Horizon Harbour Plot 1", "active": True},
-        {"id": "prj-02", "code": "PRJ-MG2", "name": "Azure Bay Tower 2", "client": "Azure Bay Development LLC (Synthetic)", "site_location": "Azure Marina Plot 2", "active": True},
-        {"id": "prj-03", "code": "PRJ-DSQ", "name": "Metropolis Central Square", "client": "Metropolis Commercial Properties LLC (Synthetic)", "site_location": "Central Business District", "active": True},
-        {"id": "prj-04", "code": "PRJ-JBV", "name": "Palm Crest Villa 12", "client": "Oasis Leisure Developments LLC (Synthetic)", "site_location": "Palm Crest Enclave", "active": True},
+        {"id": "prj-01", "code": "PRJ-CT4", "name": "Nova Meridian Tower Phase 1 (Fictional Demo)", "client": "Apex Horizon Property Holdings PJSC (Fictional Demo)", "site_location": "Synthetic Sector 4, Innovation Zone, Plot F-101", "active": True},
+        {"id": "prj-02", "code": "PRJ-MG2", "name": "Azure Bay Marina Tower 2 (Fictional Demo)", "client": "Azure Marina Ventures LLC (Fictional Demo)", "site_location": "Marina Sector 2, Innovation Basin", "active": True},
+        {"id": "prj-03", "code": "PRJ-DSQ", "name": "Metropolis Central Plaza (Fictional Demo)", "client": "Metropolis Commercial Holdings LLC (Fictional Demo)", "site_location": "Metropolis Sector 8", "active": True},
+        {"id": "prj-04", "code": "PRJ-JBV", "name": "Oasis Crest Pavilion 12 (Fictional Demo)", "client": "Oasis Resort Properties LLC (Fictional Demo)", "site_location": "Oasis Sector 12", "active": True},
     ]
     for p in projects_data:
         if not session.get(ProjectOrm, p["id"]):
@@ -102,11 +102,11 @@ def seed_database(session: Session) -> dict[str, int]:
 
     # 5. Synthetic Suppliers (Fictitious 15-digit UAE TRNs)
     suppliers_data = [
-        {"id": "sup-01", "name": "Gulf ReadyMix Concrete LLC (Synthetic)", "trn": "100234567800003", "aliases": ["Gulf ReadyMix"], "active": True},
-        {"id": "sup-02", "name": "Emirates Cement Factory LLC (Synthetic)", "trn": "100023456700003", "aliases": ["Emirates Cement"], "active": True},
-        {"id": "sup-03", "name": "Apex Steel Industries LLC (Synthetic)", "trn": "100456789000003", "aliases": ["Apex Steel"], "active": True},
-        {"id": "sup-04", "name": "Apex Blocks & Pavers LLC (Synthetic)", "trn": "100567890100003", "aliases": ["Apex Blocks"], "active": True},
-        {"id": "sup-05", "name": "Barari Aggregates LLC (Synthetic)", "trn": "100678901200003", "aliases": ["Barari Aggregates"], "active": True},
+        {"id": "sup-01", "name": "Zenith Matrix ReadyMix LLC (Fictional Demo)", "trn": "100234567800003", "aliases": ["Zenith Matrix ReadyMix"], "active": True},
+        {"id": "sup-02", "name": "Caelum Bulk Cement Factory LLC (Fictional Demo)", "trn": "100023456700003", "aliases": ["Caelum Bulk Cement"], "active": True},
+        {"id": "sup-03", "name": "Vulcan Apex Steel Fabrication LLC (Fictional Demo)", "trn": "100456789000003", "aliases": ["Vulcan Apex Steel"], "active": True},
+        {"id": "sup-04", "name": "Crescent Quarry Blocks & Pavers LLC (Fictional Demo)", "trn": "100567890100003", "aliases": ["Crescent Quarry Blocks"], "active": True},
+        {"id": "sup-05", "name": "Solaria Mineral Aggregates LLC (Fictional Demo)", "trn": "100678901200003", "aliases": ["Solaria Mineral Aggregates"], "active": True},
     ]
     for s in suppliers_data:
         if not session.get(SupplierOrm, s["id"]):
@@ -219,7 +219,7 @@ def seed_database(session: Session) -> dict[str, int]:
         session.flush()
 
     # 7. Five Primary Synthetic Verification Cases
-    # Case 1: Clean Exact Match (Emirates Cement)
+    # Case 1: Clean Exact Match (Caelum Bulk Cement)
     c1_existing = session.get(VerificationCaseOrm, "case-synth-01")
     if c1_existing and not c1_existing.lpo_id:
         c1_existing.lpo_id = "lpo-synth-01"
@@ -621,9 +621,9 @@ SYNTHETIC_DOCUMENT_FILES: dict[str, dict[str, Any]] = {
         "title": "TAX INVOICE INV-8821",
         "doc_ref": "INV-8821",
         "case_ref": "VC-2026-00001",
-        "party": "Emirates Cement Factory LLC (Synthetic)",
+        "party": "Caelum Bulk Cement Factory LLC (Fictional Demo)",
         "details": [
-            ("Project:", "Alpha Horizon Tower Phase 1 (PRJ-CT4)"),
+            ("Project:", "Nova Meridian Tower Phase 1 (Fictional Demo)"),
             ("Material:", "Ordinary Portland Cement (Bulk)"),
             ("Invoiced Qty:", "40.000 t"),
             ("Total Stated:", "AED 10,800.00 (Excl. VAT)"),
@@ -633,9 +633,9 @@ SYNTHETIC_DOCUMENT_FILES: dict[str, dict[str, Any]] = {
         "title": "DELIVERY NOTE DN-4401",
         "doc_ref": "DN-4401",
         "case_ref": "VC-2026-00001",
-        "party": "Emirates Cement Factory LLC (Synthetic)",
+        "party": "Caelum Bulk Cement Factory LLC (Fictional Demo)",
         "details": [
-            ("Project:", "Alpha Horizon Tower Phase 1 (PRJ-CT4)"),
+            ("Project:", "Nova Meridian Tower Phase 1 (Fictional Demo)"),
             ("Material:", "Ordinary Portland Cement (Bulk)"),
             ("Delivered Qty:", "20.000 t"),
             ("Ticket Status:", "Signed & Received on Site"),
@@ -645,9 +645,9 @@ SYNTHETIC_DOCUMENT_FILES: dict[str, dict[str, Any]] = {
         "title": "DELIVERY NOTE DN-4402",
         "doc_ref": "DN-4402",
         "case_ref": "VC-2026-00001",
-        "party": "Emirates Cement Factory LLC (Synthetic)",
+        "party": "Caelum Bulk Cement Factory LLC (Fictional Demo)",
         "details": [
-            ("Project:", "Alpha Horizon Tower Phase 1 (PRJ-CT4)"),
+            ("Project:", "Nova Meridian Tower Phase 1 (Fictional Demo)"),
             ("Material:", "Ordinary Portland Cement (Bulk)"),
             ("Delivered Qty:", "20.000 t"),
             ("Ticket Status:", "Signed & Received on Site"),
@@ -657,9 +657,9 @@ SYNTHETIC_DOCUMENT_FILES: dict[str, dict[str, Any]] = {
         "title": "TAX INVOICE INV-9042",
         "doc_ref": "INV-9042",
         "case_ref": "VC-2026-00002",
-        "party": "Gulf ReadyMix Concrete LLC (Synthetic)",
+        "party": "Zenith Matrix ReadyMix LLC (Fictional Demo)",
         "details": [
-            ("Project:", "Azure Bay Tower 2 (PRJ-MG2)"),
+            ("Project:", "Azure Bay Marina Tower 2 (Fictional Demo)"),
             ("Material:", "ReadyMix Concrete C40/20"),
             ("Invoiced Qty:", "24.000 m3"),
             ("Total Stated:", "AED 45,200.00 (Excl. VAT)"),
@@ -669,9 +669,9 @@ SYNTHETIC_DOCUMENT_FILES: dict[str, dict[str, Any]] = {
         "title": "DELIVERY NOTE DN-5110",
         "doc_ref": "DN-5110",
         "case_ref": "VC-2026-00002",
-        "party": "Gulf ReadyMix Concrete LLC (Synthetic)",
+        "party": "Zenith Matrix ReadyMix LLC (Fictional Demo)",
         "details": [
-            ("Project:", "Azure Bay Tower 2 (PRJ-MG2)"),
+            ("Project:", "Azure Bay Marina Tower 2 (Fictional Demo)"),
             ("Material:", "ReadyMix Concrete C40/20"),
             ("Delivered Qty:", "21.000 m3"),
             ("Ticket Status:", "Signed & Received on Site"),
@@ -681,9 +681,9 @@ SYNTHETIC_DOCUMENT_FILES: dict[str, dict[str, Any]] = {
         "title": "DELIVERY NOTE DN-5112",
         "doc_ref": "DN-5112",
         "case_ref": "VC-2026-00002",
-        "party": "Gulf ReadyMix Concrete LLC (Synthetic)",
+        "party": "Zenith Matrix ReadyMix LLC (Fictional Demo)",
         "details": [
-            ("Project:", "Azure Bay Tower 2 (PRJ-MG2)"),
+            ("Project:", "Azure Bay Marina Tower 2 (Fictional Demo)"),
             ("Material:", "ReadyMix Concrete C40/20"),
             ("Delivered Qty:", "0.000 m3 (Cancelled)"),
             ("Ticket Status:", "Batching Plant Cancellation Note"),
@@ -693,9 +693,9 @@ SYNTHETIC_DOCUMENT_FILES: dict[str, dict[str, Any]] = {
         "title": "TAX INVOICE INV-3104",
         "doc_ref": "INV-3104",
         "case_ref": "VC-2026-00003",
-        "party": "Apex Steel Industries LLC (Synthetic)",
+        "party": "Vulcan Apex Steel Fabrication LLC (Fictional Demo)",
         "details": [
-            ("Project:", "Metropolis Central Square (PRJ-DSQ)"),
+            ("Project:", "Metropolis Central Plaza (Fictional Demo)"),
             ("Material:", "High Tensile Rebar 16mm"),
             ("Invoiced Qty:", "55.000 t"),
         ],
@@ -704,9 +704,9 @@ SYNTHETIC_DOCUMENT_FILES: dict[str, dict[str, Any]] = {
         "title": "TAX INVOICE INV-1290",
         "doc_ref": "INV-1290",
         "case_ref": "VC-2026-00004",
-        "party": "Apex Blocks & Pavers LLC (Synthetic)",
+        "party": "Crescent Quarry Blocks & Pavers LLC (Fictional Demo)",
         "details": [
-            ("Project:", "Palm Crest Villa 12 (PRJ-JBV)"),
+            ("Project:", "Oasis Crest Pavilion 12 (Fictional Demo)"),
             ("Material:", "Solid Masonry Blocks 200mm"),
             ("Invoiced Qty:", "4,200 pcs"),
         ],
@@ -715,12 +715,75 @@ SYNTHETIC_DOCUMENT_FILES: dict[str, dict[str, Any]] = {
         "title": "DELIVERY NOTE DN-7019",
         "doc_ref": "DN-7019",
         "case_ref": "VC-2026-00004 / VC-2026-00012",
-        "party": "Apex Blocks & Pavers LLC (Synthetic)",
+        "party": "Crescent Quarry Blocks & Pavers LLC (Fictional Demo)",
         "details": [
-            ("Project:", "Palm Crest Villa 12 (PRJ-JBV)"),
+            ("Project:", "Oasis Crest Pavilion 12 (Fictional Demo)"),
             ("Material:", "Solid Masonry Blocks 200mm"),
             ("Delivered Qty:", "4,200 pcs"),
             ("Ticket Status:", "Flagged for Re-use across Cases"),
+        ],
+    },
+    "showcase_inv_conc_001.pdf": {
+        "title": "TAX INVOICE INV-2026-CONC-001",
+        "doc_ref": "INV-2026-CONC-001",
+        "case_ref": "SHOWCASE-CONC-01",
+        "party": "Atlas Orion ReadyMix LLC (Fictional Demo)",
+        "details": [
+            ("Project:", "Nova Meridian Residences - Tower 1 (Fictional Demo)"),
+            ("Material:", "ReadyMix Concrete C40/20"),
+            ("Invoiced Qty:", "36.00 m3"),
+            ("Unit Price:", "AED 240.00 / m3"),
+            ("Total Stated:", "AED 8,640.00 (Excl. VAT)"),
+        ],
+    },
+    "showcase_dn_conc_081.pdf": {
+        "title": "DELIVERY NOTE DN-2026-CONC-081",
+        "doc_ref": "DN-2026-CONC-081",
+        "case_ref": "SHOWCASE-CONC-01",
+        "party": "Atlas Orion ReadyMix LLC (Fictional Demo)",
+        "details": [
+            ("Project:", "Nova Meridian Residences - Tower 1 (Fictional Demo)"),
+            ("Material:", "ReadyMix Concrete C40/20"),
+            ("Delivered Qty:", "36.00 m3"),
+            ("Ticket Status:", "Signed & Received on Site"),
+        ],
+    },
+    "showcase_inv_steel_002.pdf": {
+        "title": "TAX INVOICE INV-2026-STEEL-002",
+        "doc_ref": "INV-2026-STEEL-002",
+        "case_ref": "SHOWCASE-STEEL-02",
+        "party": "Vulcan Apex Rebar Fabrication LLC (Fictional Demo)",
+        "details": [
+            ("Project:", "Nova Meridian Residences - Tower 1 (Fictional Demo)"),
+            ("Material:", "High Tensile Rebar 16mm"),
+            ("Invoiced Qty:", "20.00 tonne"),
+            ("Unit Price:", "AED 3,100.00 / t"),
+            ("Total Stated:", "AED 62,000.00 (Excl. VAT)"),
+        ],
+    },
+    "showcase_dn_steel_412.pdf": {
+        "title": "DELIVERY NOTE DN-2026-STEEL-412",
+        "doc_ref": "DN-2026-STEEL-412",
+        "case_ref": "SHOWCASE-STEEL-02",
+        "party": "Vulcan Apex Rebar Fabrication LLC (Fictional Demo)",
+        "details": [
+            ("Project:", "Nova Meridian Residences - Tower 1 (Fictional Demo)"),
+            ("Material:", "High Tensile Rebar 16mm"),
+            ("Delivered Qty:", "15.00 tonne"),
+            ("Ticket Status:", "Signed & Received on Site (Short delivery: 15.00 tonne)"),
+        ],
+    },
+    "showcase_inv_miss_003.pdf": {
+        "title": "TAX INVOICE INV-2026-MISS-003",
+        "doc_ref": "INV-2026-MISS-003",
+        "case_ref": "SHOWCASE-EVID-03",
+        "party": "Vulcan Apex Rebar Fabrication LLC (Fictional Demo)",
+        "details": [
+            ("Project:", "Nova Meridian Residences - Tower 1 (Fictional Demo)"),
+            ("Material:", "High Tensile Rebar 16mm"),
+            ("Invoiced Qty:", "8.00 tonne"),
+            ("Unit Price:", "AED 3,250.00 / t"),
+            ("Total Stated:", "AED 26,000.00 (Excl. VAT)"),
         ],
     },
 }
@@ -775,7 +838,10 @@ def generate_synthetic_pdf_bytes(
     return buf.getvalue()
 
 
-def ensure_synthetic_storage_files(storage_dir: Path | str | None = None) -> list[str]:
+def ensure_synthetic_storage_files(
+    storage_dir: Path | str | None = None,
+    force_regenerate: bool = False,
+) -> list[str]:
     """Ensure all seeded synthetic PDF files exist in the storage directory.
 
     Idempotently creates synthetic PDF fixtures without altering database records.
@@ -791,7 +857,7 @@ def ensure_synthetic_storage_files(storage_dir: Path | str | None = None) -> lis
     created: list[str] = []
     for filename, meta in SYNTHETIC_DOCUMENT_FILES.items():
         file_path = target_dir / filename
-        if not file_path.is_file():
+        if force_regenerate or not file_path.is_file():
             pdf_bytes = generate_synthetic_pdf_bytes(
                 title=meta["title"],
                 doc_ref=meta["doc_ref"],

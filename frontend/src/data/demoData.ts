@@ -14,7 +14,7 @@ export interface ComparisonLine {
   unit: string
   dnQty: string
   diff: string
-  status: 'Matched' | 'Mismatch' | 'Missing' | 'Uncertain'
+  status: 'Matched' | 'Mismatch' | 'Missing' | 'Uncertain' | 'Pending' | 'Unverified'
   dnRef: string
   rejectionEvidence?: string
   ruleStatus?: string
@@ -50,10 +50,10 @@ export interface InvoiceRecord {
 export const DEMO_INVOICES: InvoiceRecord[] = [
   {
     id: 'case-01',
-    supplier: 'Emirates Cement Factory LLC',
+    supplier: 'Caelum Bulk Cement Factory LLC (Fictional Demo)',
     supplierTrn: '100023456700003',
     invoiceNo: 'INV-8821',
-    project: 'Alpha Horizon Tower P1',
+    project: 'Nova Meridian Tower P1 (Fictional Demo)',
     amountAed: '45,200.00',
     status: 'Matched',
     date: '2026-03-28',
@@ -104,10 +104,10 @@ export const DEMO_INVOICES: InvoiceRecord[] = [
   },
   {
     id: 'case-02',
-    supplier: 'Gulf ReadyMix Concrete LLC',
+    supplier: 'Zenith Matrix ReadyMix LLC (Fictional Demo)',
     supplierTrn: '100234567800003',
     invoiceNo: 'INV-9042',
-    project: 'Azure Bay Tower 2',
+    project: 'Azure Bay Marina Tower 2 (Fictional Demo)',
     amountAed: '18,750.00',
     status: 'Mismatch',
     date: '2026-03-29',
@@ -167,10 +167,10 @@ export const DEMO_INVOICES: InvoiceRecord[] = [
   },
   {
     id: 'case-03',
-    supplier: 'Apex Steel Industries LLC',
+    supplier: 'Vulcan Apex Steel Fabrication LLC (Fictional Demo)',
     supplierTrn: '100456789000003',
     invoiceNo: 'INV-3104',
-    project: 'Metropolis Square',
+    project: 'Metropolis Central Plaza (Fictional Demo)',
     amountAed: '92,400.00',
     status: 'Missing',
     date: '2026-03-30',

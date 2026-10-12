@@ -30,6 +30,47 @@ export interface ApiDocument {
   quarantine_status?: string
   is_quarantined?: boolean
   reference_no_normalized?: string
+  extraction_status?: string
+  extractor_name?: string
+  data_review_status?: string
+}
+
+export interface ApiExtractedField {
+  id: string
+  field_key: string
+  raw_value: string | null
+  normalized_value: string | null
+  value_type: string
+  status: 'EXTRACTED' | 'CONFIRMED' | 'CORRECTED' | 'MISSING'
+  confidence?: string | null
+  method?: string
+  updated_by?: string | null
+  updated_at?: string | null
+  revisions_count?: number
+}
+
+export interface ApiExtractedLineItem {
+  id: string
+  line_no: number
+  kind: string
+  storekeeper_ticket_no?: string | null
+  rejected_qty?: string | null
+  rejection_reason_code?: string | null
+  has_rejection_evidence?: boolean
+  storekeeper_confirmed?: boolean
+  engineer_verified?: boolean
+  fields: ApiExtractedField[]
+}
+
+export interface ApiDocumentFieldsResponse {
+  document_id: string
+  doc_type: string
+  original_filename: string
+  extraction_status: string
+  data_review_status: string
+  extractor_name?: string
+  header_fields: ApiExtractedField[]
+  line_items: ApiExtractedLineItem[]
 }
 
 export interface ApiFinding {
@@ -142,7 +183,33 @@ export interface ApiCaseSummary {
   lpo_reason_code?: string | null
   lpo_reason_text?: string | null
   status: string
+  created_by?: string | null
   created_at: string
+}
+
+export interface ApiCaseLineItem {
+  id: string
+  document_id: string
+  doc_type?: string | null
+  dn_number?: string | null
+  line_no: number
+  kind: string
+  fields: Record<string, string>
+  storekeeper_ticket_no?: string | null
+  storekeeper_confirmed?: boolean
+  engineer_verified?: boolean
+  rejected_qty?: string | null
+  rejection_reason_code?: string | null
+  has_rejection_evidence?: boolean
+}
+
+export interface ApiCaseLineLink {
+  id: string
+  invoice_line_id: string
+  dn_line_id: string
+  lpo_line_id?: string | null
+  link_method: string
+  status: string
 }
 
 export interface ApiCaseDetail extends ApiCaseSummary {
@@ -152,6 +219,8 @@ export interface ApiCaseDetail extends ApiCaseSummary {
   runs: ApiRun[]
   audit_events: ApiAuditEvent[]
   reviews: ApiReview[]
+  line_items?: ApiCaseLineItem[]
+  line_links?: ApiCaseLineLink[]
 }
 
 export interface UploadDocumentResponse {
@@ -409,4 +478,182 @@ export function getDocumentContentUrl(documentId: string): string {
   }
   return `${API_BASE_URL}/documents/${encodeURIComponent(documentId)}/content`
 }
+
+export interface CreateCasePayload {
+  case_ref: string
+  project_id: string
+  supplier_id: string
+  invoice_number_hint?: string | null
+  currency?: string
+  lpo_required?: boolean
+  lpo_reason_code?: string | null
+  lpo_reason_text?: string | null
+  lpo_id?: string | null
+}
+
+export interface AddInvoiceLinePayload {
+  line_no: number
+  description: string
+  invoiced_qty: string
+  unit: string
+  unit_price: string
+  line_amount: string
+  material_id?: string | null
+  document_id?: string | null
+}
+
+export interface AddDnLinePayload {
+  dn_number: string
+  line_no: number
+  description: string
+  delivered_qty: string
+  unit: string
+  storekeeper_ticket_no?: string | null
+  storekeeper_confirmed?: boolean
+  rejected_qty?: string | null
+  rejection_reason_code?: string | null
+  has_rejection_evidence?: boolean
+  document_id?: string | null
+}
+
+export interface CreateLineLinkPayload {
+  invoice_line_id: string
+  dn_line_id: string
+  lpo_line_id?: string | null
+  link_method?: string
+}
+
+export async function fetchProjects(): Promise<ApiProject[]> {
+  const res = await fetch(`${API_BASE_URL}/projects`, {
+    headers: getAuthHeaders(),
+  })
+  const data = await handleResponse<{ projects: ApiProject[] }>(res)
+  return data.projects || []
+}
+
+export async function fetchSuppliers(): Promise<ApiSupplier[]> {
+  const res = await fetch(`${API_BASE_URL}/suppliers`, {
+    headers: getAuthHeaders(),
+  })
+  const data = await handleResponse<{ suppliers: ApiSupplier[] }>(res)
+  return data.suppliers || []
+}
+
+export async function createCase(payload: CreateCasePayload): Promise<{ case: ApiCaseSummary }> {
+  const headers = getAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${API_BASE_URL}/cases`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  })
+  return handleResponse<{ case: ApiCaseSummary }>(res)
+}
+
+export async function addInvoiceLine(
+  caseId: string,
+  payload: AddInvoiceLinePayload
+): Promise<{ line_item: Record<string, unknown> }> {
+  const headers = getAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${API_BASE_URL}/cases/${encodeURIComponent(caseId)}/invoice-lines`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  })
+  return handleResponse<{ line_item: Record<string, unknown> }>(res)
+}
+
+export async function addDnLine(
+  caseId: string,
+  payload: AddDnLinePayload
+): Promise<{ line_item: Record<string, unknown> }> {
+  const headers = getAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${API_BASE_URL}/cases/${encodeURIComponent(caseId)}/delivery-note-lines`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  })
+  return handleResponse<{ line_item: Record<string, unknown> }>(res)
+}
+
+export async function createLineLink(
+  caseId: string,
+  payload: CreateLineLinkPayload
+): Promise<{ link: ApiCaseLineLink }> {
+  const headers = getAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${API_BASE_URL}/cases/${encodeURIComponent(caseId)}/links`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  })
+  return handleResponse<{ link: ApiCaseLineLink }>(res)
+}
+
+export async function runVerification(caseId: string): Promise<{ run: ApiRun; case_status: string }> {
+  const headers = getAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${API_BASE_URL}/cases/${encodeURIComponent(caseId)}/verify`, {
+    method: 'POST',
+    headers,
+  })
+  return handleResponse<{ run: ApiRun; case_status: string }>(res)
+}
+
+export async function triggerExtraction(documentId: string): Promise<Record<string, unknown>> {
+  const headers = getAuthHeaders()
+  const res = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(documentId)}/extract`, {
+    method: 'POST',
+    headers,
+  })
+  return handleResponse<Record<string, unknown>>(res)
+}
+
+export async function fetchDocumentFields(documentId: string): Promise<ApiDocumentFieldsResponse> {
+  const headers = getAuthHeaders()
+  const res = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(documentId)}/extracted-fields`, {
+    headers,
+  })
+  return handleResponse<ApiDocumentFieldsResponse>(res)
+}
+
+export async function updateExtractedField(
+  documentId: string,
+  fieldId: string,
+  newValue: string,
+  reason?: string
+): Promise<ApiExtractedField> {
+  const headers = getAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(
+    `${API_BASE_URL}/documents/${encodeURIComponent(documentId)}/fields/${encodeURIComponent(fieldId)}`,
+    {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ new_value: newValue, reason }),
+    }
+  )
+  return handleResponse<ApiExtractedField>(res)
+}
+
+export async function confirmDocumentFields(documentId: string): Promise<{
+  document_id: string
+  confirmed_count: number
+  data_review_status: string
+}> {
+  const headers = getAuthHeaders()
+  const res = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(documentId)}/confirm`, {
+    method: 'POST',
+    headers,
+  })
+  return handleResponse<{
+    document_id: string
+    confirmed_count: number
+    data_review_status: string
+  }>(res)
+}
+
+
 
