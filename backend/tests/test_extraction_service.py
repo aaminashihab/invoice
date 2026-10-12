@@ -155,13 +155,14 @@ def test_missing_api_key_raises_error(test_db_and_app):
     session = SessionLocal()
     # Save a document
     content = b"%PDF-1.4 dummy"
-    storage_path = storage.save("test.pdf", content)
+    storage_key = "test.pdf"
+    storage.save(storage_key, content)
     doc = DocumentOrm(
         id="doc-test-key",
         case_id="case-ai-001",
         doc_type="INVOICE",
         original_filename="invoice.pdf",
-        storage_key=storage_path,
+        storage_key=storage_key,
         mime_type="application/pdf",
         size_bytes=len(content),
         sha256="abc",
@@ -190,13 +191,14 @@ def test_mocked_invoice_extraction_and_untrusted_status(test_db_and_app):
 
     session = SessionLocal()
     content = b"%PDF-1.4 test invoice content"
-    storage_path = storage.save("inv.pdf", content)
+    storage_key = "inv.pdf"
+    storage.save(storage_key, content)
     doc = DocumentOrm(
         id="doc-inv-001",
         case_id="case-ai-001",
         doc_type="INVOICE",
         original_filename="INV-789.pdf",
-        storage_key=storage_path,
+        storage_key=storage_key,
         mime_type="application/pdf",
         size_bytes=len(content),
         sha256="def",
@@ -262,13 +264,14 @@ def test_absent_rejected_qty_remains_none_never_zero(test_db_and_app):
 
     session = SessionLocal()
     content = b"%PDF-1.4 test dn"
-    storage_path = storage.save("dn.pdf", content)
+    storage_key = "dn.pdf"
+    storage.save(storage_key, content)
     doc = DocumentOrm(
         id="doc-dn-001",
         case_id="case-ai-001",
         doc_type="DELIVERY_NOTE",
         original_filename="DN-1122.pdf",
-        storage_key=storage_path,
+        storage_key=storage_key,
         mime_type="application/pdf",
         size_bytes=len(content),
         sha256="ghi",
@@ -312,13 +315,14 @@ def test_re_extraction_preserves_confirmed_and_corrected_fields(test_db_and_app)
 
     session = SessionLocal()
     content = b"%PDF-1.4 test"
-    storage_path = storage.save("doc1.pdf", content)
+    storage_key = "doc1.pdf"
+    storage.save(storage_key, content)
     doc = DocumentOrm(
         id="doc-reextract-001",
         case_id="case-ai-001",
         doc_type="INVOICE",
         original_filename="INV-1.pdf",
-        storage_key=storage_path,
+        storage_key=storage_key,
         mime_type="application/pdf",
         size_bytes=len(content),
         sha256="jkl",
@@ -375,13 +379,14 @@ def test_confirm_all_fields_promotes_status(test_db_and_app):
 
     session = SessionLocal()
     content = b"%PDF-1.4 test"
-    storage_path = storage.save("doc2.pdf", content)
+    storage_key = "doc2.pdf"
+    storage.save(storage_key, content)
     doc = DocumentOrm(
         id="doc-conf-001",
         case_id="case-ai-001",
         doc_type="INVOICE",
         original_filename="INV-2.pdf",
-        storage_key=storage_path,
+        storage_key=storage_key,
         mime_type="application/pdf",
         size_bytes=len(content),
         sha256="mno",
@@ -418,13 +423,14 @@ def test_api_endpoints_workflow(test_db_and_app):
 
     session = SessionLocal()
     content = b"%PDF-1.4 sample api doc"
-    storage_path = storage.save("api_test.pdf", content)
+    storage_key = "api_test.pdf"
+    storage.save(storage_key, content)
     doc = DocumentOrm(
         id="doc-api-001",
         case_id="case-ai-001",
         doc_type="INVOICE",
         original_filename="INV-API.pdf",
-        storage_key=storage_path,
+        storage_key=storage_key,
         mime_type="application/pdf",
         size_bytes=len(content),
         sha256="pqr",

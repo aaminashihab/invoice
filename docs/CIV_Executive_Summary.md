@@ -74,7 +74,7 @@ The platform was validated across three representative construction scenarios in
 
 ### Enterprise Security & Compliance Safeguards
 - **100% Tamper-Evident Auditability**: Every field modification, extraction run, and sign-off is logged in an append-only PostgreSQL ledger with user IDs, timestamps, and previous/new values.
-- **Encrypted Document Vault**: Documents are encrypted at rest using authenticated symmetric AES-128-CBC encryption.
+- **Encrypted Document Vault**: Documents are encrypted at rest using authenticated symmetric AES-256-GCM encryption.
 - **Zero Payment Risk**: CIV is strictly an operational verification and commercial governance platform. It does not initiate automated bank transfers or ERP balance disbursements without multi-role sign-off.
 - **Strict Role Separation**: Segregates data entry, QS verification, and commercial management sign-offs to prevent internal fraud.
 

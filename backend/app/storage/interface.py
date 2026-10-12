@@ -45,9 +45,25 @@ class LocalStorage(DocumentStorage):
 
     def _resolve_safe_path(self, storage_key: str) -> Path:
         """Resolve storage key securely, preventing directory traversal attacks."""
-        clean_key = storage_key.strip().lstrip("/\\")
+        key_str = storage_key.strip()
+        if key_str.startswith("//") or key_str.startswith("\\\\"):
+            raise StorageSecurityError(f"UNC storage keys are not allowed: {storage_key}")
+
+        clean_key = key_str.lstrip("/\\")
         if ".." in clean_key or clean_key.startswith("/") or clean_key.startswith("\\"):
             raise StorageSecurityError(f"Unsafe storage key: {storage_key}")
+
+        candidate = Path(key_str)
+        if candidate.is_absolute():
+            try:
+                resolved = candidate.resolve()
+            except OSError as exc:
+                raise StorageSecurityError(f"Cannot resolve absolute storage path {candidate}: {exc}")
+            try:
+                resolved.relative_to(self.base_dir)
+                return resolved
+            except ValueError:
+                raise StorageSecurityError(f"Storage path {resolved} escapes {self.base_dir}")
 
         target_path = (self.base_dir / clean_key).resolve()
         try:
@@ -95,9 +111,25 @@ class EncryptedCleanStorage(DocumentStorage):
         self.key_material = key_material
 
     def _resolve_safe_path(self, storage_key: str) -> Path:
-        clean_key = storage_key.strip().lstrip("/\\")
+        key_str = storage_key.strip()
+        if key_str.startswith("//") or key_str.startswith("\\\\"):
+            raise StorageSecurityError(f"UNC storage keys are not allowed: {storage_key}")
+
+        clean_key = key_str.lstrip("/\\")
         if ".." in clean_key or clean_key.startswith("/") or clean_key.startswith("\\"):
             raise StorageSecurityError(f"Unsafe storage key: {storage_key}")
+
+        candidate = Path(key_str)
+        if candidate.is_absolute():
+            try:
+                resolved = candidate.resolve()
+            except OSError as exc:
+                raise StorageSecurityError(f"Cannot resolve absolute storage path {candidate}: {exc}")
+            try:
+                resolved.relative_to(self.base_dir)
+                return resolved
+            except ValueError:
+                raise StorageSecurityError(f"Storage path {resolved} escapes {self.base_dir}")
 
         target_path = (self.base_dir / clean_key).resolve()
         try:

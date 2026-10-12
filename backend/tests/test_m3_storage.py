@@ -72,12 +72,35 @@ def test_local_storage_crud_and_traversal_safety(tmp_path):
     assert storage.delete(key) is True
     assert storage.exists(key) is False
 
+    # Absolute path resolution inside base_dir
+    abs_key = str(tmp_path / "abs_doc.bin")
+    storage.save(abs_key, payload)
+    assert storage.exists(abs_key) is True
+    assert storage.read(abs_key) == payload
+    assert storage.delete(abs_key) is True
+    assert storage.exists(abs_key) is False
+
     # Directory traversal prevention
     with pytest.raises(StorageSecurityError):
         storage.save("../escape.bin", payload)
 
     with pytest.raises(StorageSecurityError):
         storage.read("../../secret.txt")
+
+    # Absolute path escaping base_dir prevention
+    outside_path = str(tmp_path.parent / "escape_abs.bin")
+    with pytest.raises(StorageSecurityError):
+        storage.save(outside_path, payload)
+
+    with pytest.raises(StorageSecurityError):
+        storage.read(outside_path)
+
+    # UNC path prevention
+    with pytest.raises(StorageSecurityError):
+        storage.read("//server/share/file.txt")
+
+    with pytest.raises(StorageSecurityError):
+        storage.read(r"\\server\share\file.txt")
 
 
 # ---------------------------------------------------------------------------

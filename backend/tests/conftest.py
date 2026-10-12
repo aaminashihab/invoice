@@ -9,3 +9,5 @@ os.environ["APP_ENV"] = "test"
 os.environ["DEV_IDENTITY_ENABLED"] = "true"
 os.environ["CLAMAV_ENABLED"] = "false"
 os.environ["REQUIRE_MALWARE_SCAN"] = "false"
+os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+
